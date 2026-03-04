@@ -1831,6 +1831,65 @@ const FabricSquare = ({ position, color }) => (
   </mesh>
 );
 
+/* ───── 17. ZONE BOUNDARY ───── */
+const ZoneBoundary = ({ positions, zoneName, rackWidth = 5.8, rackDepth = 3.0 }) => {
+  const boundary = useMemo(() => {
+    if (!positions || positions.length === 0) return null;
+    let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
+    positions.forEach(pos => {
+      minX = Math.min(minX, pos[0] - rackWidth / 2);
+      maxX = Math.max(maxX, pos[0] + rackWidth / 2);
+      minZ = Math.min(minZ, pos[2] - rackDepth / 2);
+      maxZ = Math.max(maxZ, pos[2] + rackDepth / 2);
+    });
+    const extra = 1.0; // 1 foot extra
+    return {
+      width: (maxX - minX) + 2 * extra,
+      depth: (maxZ - minZ) + 2 * extra,
+      centerX: (minX + maxX) / 2,
+      centerZ: (minZ + maxZ) / 2
+    };
+  }, [positions, rackWidth, rackDepth]);
+
+  if (!boundary) return null;
+  const { width, depth, centerX, centerZ } = boundary;
+  const thickness = 0.2;
+
+  return (
+    <group position={[centerX, 0.01, centerZ]}>
+      {/* Front */}
+      <mesh position={[0, 0, depth / 2]}>
+        <boxGeometry args={[width, 0.02, thickness]} />
+        <meshBasicMaterial color="#fbbf24" />
+      </mesh>
+      {/* Back */}
+      <mesh position={[0, 0, -depth / 2]}>
+        <boxGeometry args={[width, 0.02, thickness]} />
+        <meshBasicMaterial color="#fbbf24" />
+      </mesh>
+      {/* Left */}
+      <mesh position={[-width / 2, 0, 0]}>
+        <boxGeometry args={[thickness, 0.02, depth]} />
+        <meshBasicMaterial color="#fbbf24" />
+      </mesh>
+      {/* Right */}
+      <mesh position={[width / 2, 0, 0]}>
+        <boxGeometry args={[thickness, 0.02, depth]} />
+        <meshBasicMaterial color="#fbbf24" />
+      </mesh>
+      {zoneName && (
+        <FloatingLabel
+          text={zoneName}
+          position={[0, 0.02, depth / 2 + 0.8]}
+          bgColor="#fbbf24"
+          textColor="#000000"
+          scale={0.6}
+        />
+      )}
+    </group>
+  );
+};
+
 /* ───── 13d. AUTO SCANNER SHED (Downstream) ───── */
 const ScanningLine = () => {
   const lineRef = useRef();
@@ -2058,6 +2117,11 @@ export default function WarehouseLayout() {
             <meshStandardMaterial color="#fdf5e6" opacity={0.6} transparent />
           </mesh>
 
+          {/* Zone Boundaries */}
+          {Object.entries(ZONE_LAYOUT).map(([zone, cfg]) => (
+            <ZoneBoundary key={`boundary-${zone}`} positions={cfg.positions} zoneName={zone} />
+          ))}
+
           {/* 1. ANIMATION LAYER */}
           <AnimatedFlow
             rollRef={rollRef}
@@ -2226,6 +2290,6 @@ export default function WarehouseLayout() {
           <Truck position={[-14, 0, 90]} />
         </Suspense>
       </Canvas>
-    </Wrapper>
+    </Wrapper >
   );
 }
