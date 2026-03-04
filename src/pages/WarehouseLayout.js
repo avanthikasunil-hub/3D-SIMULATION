@@ -6,8 +6,7 @@ import {
   useCursor,
   useTexture,
 } from "@react-three/drei";
-import { collection, query, onSnapshot } from "firebase/firestore";
-import { db } from "../firebase";
+
 import styled from "styled-components";
 import * as THREE from "three";
 
@@ -2005,17 +2004,13 @@ export default function WarehouseLayout() {
   }, [palletDropped, palletDropped2]);
 
   useEffect(() => {
-    const q = query(collection(db, "locations"));
-    const unsub = onSnapshot(q, () => {
-      const final = [];
-      Object.entries(ZONE_LAYOUT).forEach(([zone, cfg]) => {
-        cfg.positions.forEach((pos, i) => {
-          final.push({ id: `${zone}-R${i + 1}`, position: pos });
-        });
+    const final = [];
+    Object.entries(ZONE_LAYOUT).forEach(([zone, cfg]) => {
+      cfg.positions.forEach((pos, i) => {
+        final.push({ id: `${zone}-R${i + 1}`, position: pos });
       });
-      setRacks(final);
     });
-    return unsub;
+    setRacks(final);
   }, []);
 
 
