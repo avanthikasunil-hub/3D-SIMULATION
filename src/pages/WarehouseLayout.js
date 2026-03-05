@@ -801,7 +801,7 @@ const IndustrialWorkTable = ({ position = [0, 0, 0], rotation = [0, 0, 0], scale
 /* ───── 10. TASK-DRIVEN AGV ───── */
 const PickingAGV = React.forwardRef(({
   startPos, palletPos, targetPos,
-  onPick, onDrop, trigger = true,
+  onPick, onDrop, onFinalStop, trigger = true,
   name = "AGV", movementType = "normal",
   rollColor, palletRotation, pivot180 = false, cycle = 0
 }, ref) => {
@@ -1144,7 +1144,10 @@ const PickingAGV = React.forwardRef(({
       case 81: // Finish back-off
         const backOffX = 2.0;
         pos.x = moveTowards(pos.x, backOffX, moveStep);
-        if (Math.abs(pos.x - backOffX) < 0.01) setPhase(-2);
+        if (Math.abs(pos.x - backOffX) < 0.01) {
+          setPhase(-2);
+          if (onFinalStop) onFinalStop();
+        }
         break;
 
       case 9: // 9. Turn back to facing Home
@@ -1166,6 +1169,7 @@ const PickingAGV = React.forwardRef(({
         if (Math.abs(pos.z - startPos[2]) < 0.01 && Math.abs(pos.x - startPos[0]) < 0.01) {
           rot.y = 0;
           setPhase(-2); // -2: Final Stop
+          if (onFinalStop) onFinalStop();
         }
         break;
     }
@@ -2033,7 +2037,7 @@ const MonitoringTV = ({ position, rotation = [0, 0, 0], scale = [1, 1, 1], image
 
 /* ───── 12. MAIN WAREHOUSE LAYOUT ───── */
 const Wrapper = styled.div`width: 100%; height: 85vh; background: #f8fafc; border-radius: 12px; overflow: hidden; border: 1px solid #cbd5e1; position: relative;`;
-export default function WarehouseLayout() {
+export default function WarehouseLayout({ onComplete }) {
   const [racks, setRacks] = useState([]);
   const [cycle, setCycle] = useState(0);
   const [palletPicked, setPalletPicked] = useState(false);
@@ -2054,6 +2058,7 @@ export default function WarehouseLayout() {
   const agv2Ref = useRef();
   const [hoveredItem, setHoveredItem] = useState(null);
   const [showInspectionText, setShowInspectionText] = useState(false);
+  const [simulationFinished, setSimulationFinished] = useState(false);
 
   useEffect(() => {
     if (palletDropped && !palletDropped2) {
@@ -2061,6 +2066,15 @@ export default function WarehouseLayout() {
       return () => clearTimeout(timer);
     }
   }, [palletDropped, palletDropped2]);
+
+  useEffect(() => {
+    if (simulationFinished && onComplete) {
+      const timer = setTimeout(() => {
+        onComplete();
+      }, 5000); // Wait 5 seconds after EVERYTHING stops before replaying
+      return () => clearTimeout(timer);
+    }
+  }, [simulationFinished, onComplete]);
 
   useEffect(() => {
     const final = [];
@@ -2071,7 +2085,6 @@ export default function WarehouseLayout() {
     });
     setRacks(final);
   }, []);
-
 
 
   return (
@@ -2231,6 +2244,7 @@ export default function WarehouseLayout() {
             pivot180={true}
             movementType="inspection"
             palletRotation={Math.PI / 2}
+            onFinalStop={() => setSimulationFinished(true)}
           />
 
 

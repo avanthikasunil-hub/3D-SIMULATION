@@ -301,7 +301,7 @@ export default function Home() {
           </header>
 
           <div className="canvas-wrapper">
-            {activeView === "warehouse" && <WarehouseLayout key={resetKey} />}
+            {activeView === "warehouse" && <WarehouseLayout key={resetKey} onComplete={handleReplay} />}
 
             {activeView === "cutting" && (
               <div className="placeholder-3d">
